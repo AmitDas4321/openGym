@@ -596,6 +596,7 @@ const MIME_TYPES = {
   '.mjs': 'application/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
@@ -605,24 +606,37 @@ const MIME_TYPES = {
   '.ico': 'image/x-icon',
   '.woff': 'font/woff',
   '.woff2': 'font/woff2',
-  '.ttf': 'font/ttf'
+  '.ttf': 'font/ttf',
+  '.eot': 'application/vnd.ms-fontobject',
+  '.wasm': 'application/wasm',
+  '.xml': 'application/xml',
+  '.txt': 'text/plain; charset=utf-8',
+  '.map': 'application/json; charset=utf-8'
 };
 
 function serveStaticFile(filePath, res) {
   const ext = path.extname(filePath).toLowerCase();
   const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+  
+  let cacheControl = 'no-cache, must-revalidate';
+  if (filePath.includes(`${path.sep}assets${path.sep}`) || ext.match(/\.(woff|woff2|ttf|eot)$/)) {
+    cacheControl = 'public, max-age=31536000, immutable';
+  } else if (ext.match(/\.(png|jpg|jpeg|gif|svg|webp|ico)$/)) {
+    cacheControl = 'public, max-age=86400';
+  } else if (ext === '.html') {
+    cacheControl = 'no-cache, must-revalidate';
+  }
+
   const stream = fs.createReadStream(filePath);
   stream.on('error', () => {
     if (!res.headersSent) {
-      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
       res.end('Not Found');
     }
   });
   res.writeHead(200, {
     'Content-Type': contentType,
-    'Cache-Control': ext.match(/\.(png|jpg|jpeg|gif|svg|webp|woff|woff2)$/)
-      ? 'public, max-age=2592000, immutable'
-      : 'no-cache, must-revalidate'
+    'Cache-Control': cacheControl
   });
   stream.pipe(res);
 }
@@ -633,10 +647,13 @@ async function startServer() {
   initVapid().catch(err => console.warn('[WebPush] VAPID background init notice:', err.message));
 
   const isProd = process.env.NODE_ENV === 'production';
-  const distDir = path.join(process.cwd(), 'dist');
+  const distDir = path.resolve(process.cwd(), 'dist');
+  const publicDir = path.resolve(process.cwd(), 'public');
+  const mediaDir = path.resolve(process.cwd(), 'media');
   let viteServer = null;
 
-  if (!isProd || !fs.existsSync(path.join(distDir, 'index.html'))) {
+  // In development mode when dist is not built or explicitly development, load Vite middleware
+  if (!isProd && !fs.existsSync(path.join(distDir, 'index.html'))) {
     try {
       const { createServer: createViteServer } = await import('vite');
       viteServer = await createViteServer({
@@ -649,8 +666,8 @@ async function startServer() {
   }
 
   const server = http.createServer(async (req, res) => {
-    const url = new URL(req.url, 'http://x');
-    const pathname = url.pathname;
+    const url = new URL(req.url, 'http://localhost');
+    const pathname = decodeURIComponent(url.pathname);
 
     // 1. API routes
     if (pathname.startsWith('/api')) {
@@ -668,13 +685,14 @@ async function startServer() {
 
     // 2. Media routes (/img/*, /gif/*)
     if (pathname.startsWith('/img/') || pathname.startsWith('/gif/')) {
-      const mediaFilePath = path.join(process.cwd(), 'media', pathname.slice(1));
-      if (fs.existsSync(mediaFilePath) && fs.statSync(mediaFilePath).isFile()) {
+      const relPath = pathname.slice(1);
+      const mediaFilePath = path.resolve(mediaDir, relPath);
+      if (mediaFilePath.startsWith(mediaDir) && fs.existsSync(mediaFilePath) && fs.statSync(mediaFilePath).isFile()) {
         return serveStaticFile(mediaFilePath, res);
       }
     }
 
-    // 3. Frontend App (Vite in Dev or Dist in Prod)
+    // 3. Vite development middleware mode
     if (viteServer) {
       viteServer.middlewares(req, res, async () => {
         try {
@@ -691,38 +709,55 @@ async function startServer() {
           viteServer.ssrFixStacktrace(e);
           console.error(e);
           if (!res.headersSent) {
-            res.writeHead(500, { 'Content-Type': 'text/plain' });
+            res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
             res.end(e.message);
           }
           return;
         }
 
-        const publicFile = path.join(process.cwd(), 'public', pathname.slice(1));
-        if (fs.existsSync(publicFile) && fs.statSync(publicFile).isFile()) {
+        const publicFile = path.resolve(publicDir, pathname.slice(1));
+        if (publicFile.startsWith(publicDir) && fs.existsSync(publicFile) && fs.statSync(publicFile).isFile()) {
           return serveStaticFile(publicFile, res);
         }
         if (!res.headersSent) {
-          res.writeHead(404);
+          res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
           res.end('Not found');
         }
       });
       return;
     }
 
-    // Production static files from dist/
-    const staticFile = path.join(distDir, pathname === '/' ? 'index.html' : pathname.slice(1));
-    if (fs.existsSync(staticFile) && fs.statSync(staticFile).isFile()) {
+    // 4. Production Static File & SPA Serving
+    const cleanPath = pathname === '/' ? 'index.html' : pathname.slice(1);
+    const staticFile = path.resolve(distDir, cleanPath);
+
+    // Serve exact file if found in dist/
+    if (staticFile.startsWith(distDir) && fs.existsSync(staticFile) && fs.statSync(staticFile).isFile()) {
       return serveStaticFile(staticFile, res);
     }
 
-    // SPA fallback
-    const indexHtml = path.join(distDir, 'index.html');
+    // Check public directory fallback
+    const publicFile = path.resolve(publicDir, cleanPath);
+    if (publicFile.startsWith(publicDir) && fs.existsSync(publicFile) && fs.statSync(publicFile).isFile()) {
+      return serveStaticFile(publicFile, res);
+    }
+
+    // If path has a file extension and was not found, return 404
+    const ext = path.extname(pathname);
+    if (ext && ext !== '.html') {
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Asset not found');
+      return;
+    }
+
+    // SPA fallback -> serve dist/index.html
+    const indexHtml = path.resolve(distDir, 'index.html');
     if (fs.existsSync(indexHtml)) {
       return serveStaticFile(indexHtml, res);
     }
 
-    res.writeHead(404, { 'Content-Type': 'text/plain' });
-    res.end('Frontend build not found. Run npm run build or run in dev mode.');
+    res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Frontend build not found. Run "npm run build" before starting the production server.');
   });
 
   server.listen(PORT, '0.0.0.0', () => {
