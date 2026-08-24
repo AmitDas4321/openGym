@@ -1,6 +1,0 @@
-{
-  "name": "openGym",
-  "description": "Personal gym & workout tracker with passkey authentication and progress tracking.",
-  "permissions": [],
-  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
