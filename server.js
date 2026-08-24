@@ -3,6 +3,7 @@ import { loadEnv } from './database/env.js';
 loadEnv();
 
 import http from 'node:http';
+import https from 'node:https';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -641,6 +642,92 @@ function serveStaticFile(filePath, res) {
   stream.pipe(res);
 }
 
+function fetchMediaStream(targetUrl, maxRedirects = 3) {
+  return new Promise((resolve, reject) => {
+    const protocol = targetUrl.startsWith('https') ? https : http;
+    const req = protocol.get(targetUrl, { timeout: 10000 }, (stream) => {
+      if (stream.statusCode >= 300 && stream.statusCode < 400 && stream.headers.location && maxRedirects > 0) {
+        const nextUrl = new URL(stream.headers.location, targetUrl).toString();
+        stream.resume();
+        return resolve(fetchMediaStream(nextUrl, maxRedirects - 1));
+      }
+      if (stream.statusCode === 200) {
+        return resolve(stream);
+      }
+      stream.resume();
+      reject(new Error(`HTTP ${stream.statusCode}`));
+    });
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Timeout'));
+    });
+    req.on('error', reject);
+  });
+}
+
+async function serveMediaFile(relPath, res, mediaDir, publicDir, distDir) {
+  // 1. Check local media directory and fallback paths
+  const candidatePaths = [
+    path.resolve(mediaDir, relPath),
+    path.resolve(process.cwd(), relPath),
+    path.resolve(publicDir, relPath),
+    path.resolve(distDir, relPath)
+  ];
+
+  for (const p of candidatePaths) {
+    if (fs.existsSync(p) && fs.statSync(p).isFile()) {
+      return serveStaticFile(p, res);
+    }
+  }
+
+  // 2. Stream from exercise CDN with fallback and local background caching
+  const filename = path.basename(relPath);
+  const isGif = relPath.startsWith('gif/');
+  const cdnCandidates = isGif
+    ? [
+        `https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/videos/${filename}`,
+        `https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/7455efae41b330c265e7cd4b78dfa848e7ce5ebd/videos/${filename}`
+      ]
+    : [
+        `https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/images/${filename}`,
+        `https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/7455efae41b330c265e7cd4b78dfa848e7ce5ebd/images/${filename}`
+      ];
+
+  const ext = path.extname(relPath).toLowerCase();
+  const contentType = MIME_TYPES[ext] || (isGif ? 'image/gif' : 'image/jpeg');
+
+  for (const cdnUrl of cdnCandidates) {
+    try {
+      const stream = await fetchMediaStream(cdnUrl);
+      if (res.headersSent) return;
+
+      res.writeHead(200, {
+        'Content-Type': stream.headers['content-type'] || contentType,
+        'Cache-Control': 'public, max-age=31536000, immutable'
+      });
+
+      // Cache locally in background for fast future requests
+      const localCachePath = path.resolve(mediaDir, relPath);
+      try {
+        fs.mkdirSync(path.dirname(localCachePath), { recursive: true });
+        const fileOut = fs.createWriteStream(localCachePath);
+        fileOut.on('error', () => {}); // Ignore write error if volume is read-only
+        stream.pipe(fileOut);
+      } catch {}
+
+      stream.pipe(res);
+      return;
+    } catch {
+      // Try next CDN fallback
+    }
+  }
+
+  if (!res.headersSent) {
+    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Media not found');
+  }
+}
+
 /* ---------- initialize server with Vite integration ---------- */
 async function startServer() {
   await db.initDatabase();
@@ -686,10 +773,7 @@ async function startServer() {
     // 2. Media routes (/img/*, /gif/*)
     if (pathname.startsWith('/img/') || pathname.startsWith('/gif/')) {
       const relPath = pathname.slice(1);
-      const mediaFilePath = path.resolve(mediaDir, relPath);
-      if (mediaFilePath.startsWith(mediaDir) && fs.existsSync(mediaFilePath) && fs.statSync(mediaFilePath).isFile()) {
-        return serveStaticFile(mediaFilePath, res);
-      }
+      return serveMediaFile(relPath, res, mediaDir, publicDir, distDir);
     }
 
     // 3. Vite development middleware mode

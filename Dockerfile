@@ -42,7 +42,7 @@ COPY scripts ./scripts
 COPY public ./public
 
 # Ensure directories for user data and media exist with proper permissions
-RUN mkdir -p ./media ./data && chown -R node:node /app
+RUN mkdir -p ./media/img ./media/gif ./data && chown -R node:node /app
 
 # Switch to non-root user for security
 USER node
