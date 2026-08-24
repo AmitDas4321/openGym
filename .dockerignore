@@ -8,6 +8,13 @@ coverage
 !.env.example
 *.log
 .DS_Store
+*.tmp
+*.temp
 android
 ios
 website
+.vscode
+.idea
+*.test.js
+*.test.ts
+*.spec.js
