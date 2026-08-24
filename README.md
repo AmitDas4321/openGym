@@ -4,10 +4,10 @@
 
 <br>
 
-**A self-hosted gym & body-weight tracker powered by Firebase Realtime Database.**
+**A modern, privacy-first, self-hosted gym & body-weight tracker with multi-database support.**
 
-Plan your week, run guided workouts, track every set and your body weight over time —
-on your phone, synced across devices, behind your own passkey login.
+Plan your week, run guided workouts, track every set, and monitor your body weight over time —
+on your phone, tablet, or desktop, synced across devices, secured behind biometric passkey login.
 No subscription, no ads, zero telemetry.
 
 <br>
@@ -16,6 +16,8 @@ No subscription, no ads, zero telemetry.
 ![PWA](https://img.shields.io/badge/PWA-installable-a78bfa?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-38bdf8?style=flat-square&logo=react&logoColor=white)
 ![Firebase](https://img.shields.io/badge/Firebase-Realtime%20Database-FFCA28?style=flat-square&logo=firebase&logoColor=black)
+![MySQL](https://img.shields.io/badge/MySQL-Supported-4479A1?style=flat-square&logo=mysql&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Supported-47A248?style=flat-square&logo=mongodb&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-compose-2496ED?style=flat-square&logo=docker&logoColor=white)
 ![No tracking](https://img.shields.io/badge/telemetry-none-f472b6?style=flat-square)
 
@@ -35,23 +37,24 @@ No subscription, no ads, zero telemetry.
 
 ---
 
-## ⚡ Features
+## ⚡ Key Features
 
-- ⚖️ **Body-weight tracking** — interactive chart with a goal line you set, gains/losses colored by whether they move toward it.
-- 🏋️ **Weekly plan** — a routine per weekday, over a library of **1,324 exercises** (searchable, with animated demos).
-- 🗓️ **Reschedule any day** — move a workout to another day without touching your master weekly plan.
-- ▶️ **Guided workouts** — smart start for today's routine; pre-fills previous weights, rest timer, PR detection, per-exercise weight tracking.
-- ☀️ **Screen Wake Lock** — keeps the screen awake while you train; automatically releases when the workout finishes.
-- 🔗 **Supersets & Timed Exercises** — support for supersets, planks, hangs, wall sits, and loaded carries with dedicated work timers.
-- 📈 **Progression Programs** — Linear progression, **Greyskull LP** (AMRAP top set, double jumps, deload resets), double progression, or time-based.
-- 💪 **Estimated 1RM & Effort Scales** — calculate estimated 1RM curves and optionally log **RIR** (reps in reserve) or **RPE**.
-- 📤 **Share & Import Plans** — export routines as clean JSON or PDF; import history from **FitNotes**, **Strong**, **Hevy**, or **Apple Health**.
+- ⚖️ **Body-Weight Tracking** — interactive chart with goal line projections, gains/losses color-coded to your targets.
+- 🏋️ **Weekly Workout Planner** — assign routines per weekday with a library of **1,324+ exercises** (searchable, with animated demos).
+- 🗓️ **Flexible Rescheduling** — shift workouts to any day without altering your master weekly schedule.
+- ▶️ **Smart Guided Workouts** — pre-fills previous weights, auto-rest timers, personal record (PR) badges, and per-set notes.
+- ☀️ **Screen Wake Lock** — keeps the screen awake throughout training and automatically releases when you finish.
+- 🔗 **Supersets & Timed Exercises** — native support for supersets, planks, dead hangs, wall sits, and loaded carries.
+- 📈 **Built-in Progression Models** — Linear progression, **Greyskull LP** (AMRAP top set, double jumps, deload resets), double progression, or time-based routines.
+- 💪 **Estimated 1RM & Effort Tracking** — calculate estimated 1RM curves; log **RIR** (reps in reserve) or **RPE** (rate of perceived exertion).
+- 📤 **Export & Import** — export routines as JSON or PDF; import workout history from **FitNotes**, **Strong**, **Hevy**, or **Apple Health**.
 - 🟩 **Activity Heatmap & Muscle Map** — GitHub-style workout heatmap and anatomical front/back muscle engagement diagrams.
 - 🔔 **Push Notifications** — Web Push (VAPID) rest-timer alerts and workout reminders.
-- 🔑 **Passkeys (WebAuthn)** — Face ID / Touch ID / fingerprint biometric login; private keys never leave the device.
-- ☁️ **Firebase Realtime Database** — cloud sync single source of truth for persistent profiles, workouts, plans, and settings.
-- 🎨 **Customization** — light/dark themes and 8 accent colors.
-- 🌍 **12 Languages** — full localization (EN, DE, ES, FR, IT, PT, PL, TR, RU, ZH, KO, HI).
+- 🔑 **Passkeys (WebAuthn)** — passwordless Face ID / Touch ID / fingerprint biometric login; private keys never leave your device.
+- 🗄️ **Multi-Database Support** — pluggable storage providers: **Firebase Realtime Database**, **MySQL**, or **MongoDB**.
+- 🎨 **Full UI Customization** — dark/light modes and 8 vibrant accent colors.
+- 🌍 **12 Languages** — complete localization (EN, DE, ES, FR, IT, PT, PL, TR, RU, ZH, KO, HI).
+- 📱 **PWA & Mobile Ready** — installable progressive web app (PWA) with offline caching.
 
 ---
 
@@ -63,64 +66,75 @@ Browser / PWA / Mobile
          │ HTTP / WebAuthn (Port 3000)
          ▼
 ┌──────────────────────────────────────────────────────────┐
-│              Single Node.js Server (server.js)           │
+│          Unified Server (dist/server.cjs)                │
 │                                                          │
-│  ├── React 19 Frontend SPA (serves dist/ & SPA routing)  │
+│  ├── React 19 Frontend SPA (dist/ static assets + SPA)   │
 │  ├── REST API (/api/health, /api/me, /api/auth, ...)     │
 │  ├── WebAuthn Passkeys (@simplewebauthn/server)          │
-│  └── Firebase Realtime Database Client Service Layer     │
+│  └── Pluggable Database Service Layer (database/index)   │
 └────────────────────────────┬─────────────────────────────┘
                              │
-                             ▼
-              Firebase Realtime Database (Cloud)
+     ┌───────────────────────┼───────────────────────┐
+     ▼                       ▼                       ▼
+Firebase Realtime         MySQL 8+               MongoDB
+  Database (Cloud)     (Self-Hosted)          (Atlas / Local)
 ```
 
-- **ONE project** → **ONE package.json** → **ONE server (`server.js`)** → **ONE Docker image** → **ONE port `3000`**.
+- **ONE project** → **ONE package.json** → **ONE unified server (`dist/server.cjs`)** → **ONE Docker container** → **ONE port `3000`**.
 
 ---
 
 ## 🚀 Quick Start (Local Node.js)
 
-### 1. Configure Environment
+### 1. Prerequisites
+- **Node.js**: v18.0.0 or higher
+- **npm**: v9.0.0 or higher
+
+### 2. Configure Environment
 
 ```bash
 cp .env.example .env
 ```
 
-Set your database and session values in `.env`:
+Edit `.env` to configure your preferred database provider:
+
 ```env
-# Select database provider: 'firebase' | 'mysql' | 'mongodb'
+# ==============================================================================
+# Select Database Provider: 'firebase' | 'mysql' | 'mongodb'
+# ==============================================================================
 DATABASE_PROVIDER=firebase
 
-# Firebase Realtime Database
+# Firebase Realtime Database (used when DATABASE_PROVIDER=firebase)
 FIREBASE_DATABASE_URL=https://opengym-app-default-rtdb.asia-southeast1.firebasedatabase.app/
-FIREBASE_DATABASE_SECRET=your_firebase_secret_here
+FIREBASE_DATABASE_SECRET=your_firebase_database_secret
 
-# MySQL (Optional)
+# MySQL (used when DATABASE_PROVIDER=mysql)
 MYSQL_HOST=localhost
 MYSQL_PORT=3306
 MYSQL_DATABASE=opengym
 MYSQL_USER=opengym
 MYSQL_PASSWORD=your_mysql_password
 
-# MongoDB (Optional)
+# MongoDB (used when DATABASE_PROVIDER=mongodb)
 MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/
 MONGODB_DATABASE=openGym
 
-SESSION_SECRET=f199488a6d49249538ed060e54eee8104feaf1c090b69ec8cb3b3b48785c445e23c15ebbf0ef6451b26a1b78f6d2a28a7ad5ee357df0787a56bee3d73f8199a6
+# Server & Session Settings
+SESSION_SECRET=your_long_random_64_char_session_secret
 PORT=3000
+NODE_ENV=production
 ```
 
-### 2. Build & Start
+### 3. Build & Run
 
 ```bash
-# Install dependencies
+# 1. Install dependencies
 npm install
 
-# Build the React production SPA
+# 2. Build the React frontend and bundle the Node backend
 npm run build
 
-# Start the unified server
+# 3. Start the production server
 npm start
 ```
 
@@ -130,27 +144,27 @@ Visit **http://localhost:3000** in your browser.
 
 ## 🐳 Docker Deployment
 
-### 1. Build and Run with Docker Compose (Recommended)
+### 1. Docker Compose (Recommended)
 
 ```bash
-# Start container in background
+# Start container in detached mode
 docker compose up -d
 
-# View logs
+# View live application logs
 docker compose logs -f
 
-# Stop container
+# Stop and remove containers
 docker compose down
 ```
 
-### 2. Manual Docker CLI (Build, Run, Tag, Push)
+### 2. Manual Docker CLI
 
-#### Build Docker Image Locally
+#### Build the Docker Image
 ```bash
 docker build -t opengym:latest .
 ```
 
-#### Run Docker Container
+#### Run the Container
 ```bash
 docker run -d \
   --name opengym \
@@ -159,42 +173,45 @@ docker run -d \
   opengym:latest
 ```
 
-#### Check Container Health
+#### Check Health Endpoint
 ```bash
 curl http://localhost:3000/api/health
 ```
 
 #### Tag and Push to Docker Hub
 ```bash
-# 1. Log in to Docker Hub
+# 1. Authenticate with Docker Hub
 docker login
 
-# 2. Tag image with your Docker Hub username
+# 2. Tag image with your Docker Hub handle
 docker tag opengym:latest <YOUR_DOCKERHUB_USERNAME>/opengym:latest
-docker tag opengym:latest <YOUR_DOCKERHUB_USERNAME>/opengym:1.2.4
+docker tag opengym:latest <YOUR_DOCKERHUB_USERNAME>/opengym:1.0.0
 
-# 3. Push to Docker Hub
+# 3. Push to registry
 docker push <YOUR_DOCKERHUB_USERNAME>/opengym:latest
-docker push <YOUR_DOCKERHUB_USERNAME>/opengym:1.2.4
+docker push <YOUR_DOCKERHUB_USERNAME>/opengym:1.0.0
 ```
 
 ---
 
-## 🤖 GitHub Actions CI/CD (Docker Hub Publishing)
+## 🤖 GitHub Actions CI/CD
 
-This repository includes a production-ready GitHub Actions workflow at `.github/workflows/docker-publish.yml`.
+An automated Docker build & publish workflow is available at `.github/workflows/docker-publish.yml`.
 
-### Setting Up Automated Builds:
-
+### Setting Up Automated Releases:
 1. In your GitHub repository, navigate to **Settings** → **Secrets and variables** → **Actions**.
 2. Add the following repository secrets:
    - `DOCKERHUB_USERNAME`: Your Docker Hub username.
    - `DOCKERHUB_TOKEN`: Your Docker Hub Personal Access Token (PAT).
-3. Every push to the `main` branch or release tag (e.g. `v1.2.4`) will automatically build and publish the multi-stage image to your Docker Hub repository.
+3. Every push to the `main` branch or release tag (e.g. `v1.0.0`) automatically builds and pushes the multi-platform image.
 
 ---
 
-## 🗄️ Firebase Database Schema
+## 🗄️ Database Architecture
+
+The data access layer in `database/` abstracts persistence across providers:
+
+### Firebase Realtime Database Schema
 
 ```text
 profiles/
@@ -250,25 +267,29 @@ system/
     privateKey: string
 ```
 
+### MySQL & MongoDB Auto-Provisioning
+- **MySQL**: Automatically creates `profiles`, `user_states`, `invites`, `push_subscriptions`, and `system_config` tables with appropriate indexes on first connection.
+- **MongoDB**: Automatically initializes collections and unique indexes for fast queries.
+
 ---
 
 ## 🧪 Testing & Linting
 
 ```bash
-# Run test suite
+# Run unit & integration test suites
 npm test
 
-# Lint & build check
+# Run build verification & linter
 npm run lint
 ```
 
 ---
 
-## 📬 Support
+## 📬 Support & Community
 
 <p align="center">
   <a href="https://t.me/BlueOrbitDevs">
-    <img src="https://img.shields.io/badge/Telegram-Support-blue?style=for-the-badge&logo=telegram">
+    <img src="https://img.shields.io/badge/Telegram-Community%20Support-blue?style=for-the-badge&logo=telegram">
   </a>
 </p>
 
@@ -276,7 +297,7 @@ npm run lint
 
 ## 📜 License
 
-MIT License © 2026 Amit Das
+MIT License © 2026 [Amit Das](https://amitdas.site)
 
 ---
 
