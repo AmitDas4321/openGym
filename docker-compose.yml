@@ -13,10 +13,8 @@ services:
     environment:
       - PORT=3000
       - NODE_ENV=production
-      - FIREBASE_DATABASE_URL=${FIREBASE_DATABASE_URL}
-      - FIREBASE_DATABASE_SECRET=${FIREBASE_DATABASE_SECRET}
-      - SESSION_SECRET=${SESSION_SECRET:-}
     ports:
       - "${PORT:-3000}:3000"
     volumes:
       - ./media:/app/media:ro
+      - ./data:/app/data
