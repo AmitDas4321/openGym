@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node server.js",
     "start": "node dist/server.cjs",
-    "build": "vite build && esbuild server.js --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "build": "vite build && esbuild server.js --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs && node scripts/copy-media.js",
     "lint": "vite build --mode development",
     "migrate:firebase": "node scripts/migrate-to-firebase.js",
     "preview": "vite preview",
