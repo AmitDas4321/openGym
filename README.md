@@ -261,3 +261,26 @@ npm test
 # Lint & build check
 npm run lint
 ```
+
+---
+
+## 📬 Support
+
+<p align="center">
+  <a href="https://t.me/BlueOrbitDevs">
+    <img src="https://img.shields.io/badge/Telegram-Support-blue?style=for-the-badge&logo=telegram">
+  </a>
+</p>
+
+---
+
+## 📜 License
+
+MIT License © 2026 Amit Das
+
+---
+
+<p align="center">
+  <b>Made with ❤️ by <a href="https://amitdas.site">Amit Das</a></b><br>
+  ☕ Support development: <a href="https://paypal.me/AmitDas4321">PayPal.me/AmitDas4321</a>
+</p>
