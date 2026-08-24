@@ -14,6 +14,9 @@ RUN npm ci 2>/dev/null || npm install
 # Copy source code and configuration files
 COPY . .
 
+# Ensure media directory exists in builder so COPY in runner stage succeeds even if media is initially empty
+RUN mkdir -p /app/media /app/data
+
 # Build Vite frontend assets and bundle backend server into /app/dist
 RUN npm run build
 
@@ -41,8 +44,12 @@ COPY database ./database
 COPY scripts ./scripts
 COPY public ./public
 
-# Ensure directories for user data and media exist with proper permissions
-RUN mkdir -p ./media ./data && chown -R node:node /app
+# Copy media and data directories directly from builder stage into the production container
+COPY --from=builder /app/media ./media
+COPY --from=builder /app/data ./data
+
+# Ensure proper permissions for non-root user
+RUN chown -R node:node /app
 
 # Switch to non-root user for security
 USER node
