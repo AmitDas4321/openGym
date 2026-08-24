@@ -144,55 +144,176 @@ Visit **http://localhost:3000** in your browser.
 
 ## 🐳 Docker Deployment
 
-### 1. Docker Compose (Recommended)
+The easiest way to self-host openGym is using the pre-built Docker image from Docker Hub.
+
+**Docker Image:** `amitdas4321/opengym:latest`
+
+### 🚀 Docker Compose — Recommended
+
+Create a `docker-compose.yml` file:
+
+```yaml
+services:
+  opengym:
+    image: amitdas4321/opengym:latest
+    container_name: opengym
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+````
+
+Create your environment file:
 
 ```bash
-# Start container in detached mode
+cp .env.example .env
+```
+
+Edit `.env` and configure your database and security settings.
+
+Start openGym:
+
+```bash
+docker compose pull
 docker compose up -d
+```
 
-# View live application logs
+Open **[http://localhost:3000](http://localhost:3000)** in your browser.
+
+View logs:
+
+```bash
 docker compose logs -f
+```
 
-# Stop and remove containers
+Stop openGym:
+
+```bash
 docker compose down
 ```
 
-### 2. Manual Docker CLI
+### ⚡ Docker CLI
 
-#### Build the Docker Image
+Pull the latest image:
+
 ```bash
-docker build -t opengym:latest .
+docker pull amitdas4321/opengym:latest
 ```
 
-#### Run the Container
+Run openGym:
+
 ```bash
 docker run -d \
   --name opengym \
+  --restart unless-stopped \
   -p 3000:3000 \
   --env-file .env \
-  opengym:latest
+  amitdas4321/opengym:latest
 ```
 
-#### Check Health Endpoint
+Check the container:
+
+```bash
+docker ps
+```
+
+View logs:
+
+```bash
+docker logs -f opengym
+```
+
+Check the health endpoint:
+
 ```bash
 curl http://localhost:3000/api/health
 ```
 
-#### Tag and Push to Docker Hub
+### 🔄 Update openGym
+
+To update to the latest version:
+
 ```bash
-# 1. Authenticate with Docker Hub
-docker login
-
-# 2. Tag image with your Docker Hub handle
-docker tag opengym:latest <YOUR_DOCKERHUB_USERNAME>/opengym:latest
-docker tag opengym:latest <YOUR_DOCKERHUB_USERNAME>/opengym:1.0.0
-
-# 3. Push to registry
-docker push <YOUR_DOCKERHUB_USERNAME>/opengym:latest
-docker push <YOUR_DOCKERHUB_USERNAME>/opengym:1.0.0
+docker compose pull
+docker compose up -d
 ```
 
+Docker will download the newest image and recreate the container.
+
+### ⚙️ Environment Configuration
+
+Create your `.env` file from the example:
+
+```bash
+cp .env.example .env
+```
+
+Configure the database provider you want to use:
+
+```env
+DATABASE_PROVIDER=firebase
+
+# Firebase
+FIREBASE_DATABASE_URL=https://your-project.firebasedatabase.app/
+FIREBASE_DATABASE_SECRET=your_firebase_database_secret
+
+# MySQL
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_DATABASE=opengym
+MYSQL_USER=opengym
+MYSQL_PASSWORD=your_mysql_password
+
+# MongoDB
+MONGODB_URI=mongodb+srv://user:password@cluster.mongodb.net/
+MONGODB_DATABASE=openGym
+
+# Security
+SESSION_SECRET=your_long_random_64_char_session_secret
+
+# Server
+PORT=3000
+NODE_ENV=production
+```
+
+Only configure the variables required by your selected database provider.
+
+> **Security:** Never commit your `.env` file or database credentials to GitHub.
+
+### 🌐 Custom Port
+
+By default, openGym uses port `3000`.
+
+You can expose it on another host port if needed:
+
+```bash
+docker run -d \
+  --name opengym \
+  --restart unless-stopped \
+  -p 8080:3000 \
+  --env-file .env \
+  amitdas4321/opengym:latest
+```
+
+openGym will then be available at:
+
+**[http://localhost:8080](http://localhost:8080)**
+
+### 📦 Docker Hub
+
+The official pre-built Docker image is available on Docker Hub:
+
+**`amitdas4321/opengym:latest`**
+
+```bash
+docker pull amitdas4321/opengym:latest
+```
+
+No source code or local build is required to run the official image.
+
 ---
+
 
 ## 🤖 GitHub Actions CI/CD
 
