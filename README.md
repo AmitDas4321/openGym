@@ -178,20 +178,6 @@ docker run -d \
 curl http://localhost:3000/api/health
 ```
 
-#### Tag and Push to Docker Hub
-```bash
-# 1. Authenticate with Docker Hub
-docker login
-
-# 2. Tag image with your Docker Hub handle
-docker tag opengym:latest <YOUR_DOCKERHUB_USERNAME>/opengym:latest
-docker tag opengym:latest <YOUR_DOCKERHUB_USERNAME>/opengym:1.0.0
-
-# 3. Push to registry
-docker push <YOUR_DOCKERHUB_USERNAME>/opengym:latest
-docker push <YOUR_DOCKERHUB_USERNAME>/opengym:1.0.0
-```
-
 ---
 
 ## 🤖 GitHub Actions CI/CD
