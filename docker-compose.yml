@@ -11,10 +11,10 @@ services:
     env_file:
       - .env
     environment:
-      - PORT=3000
+      - PORT=${PORT:-3000}
       - NODE_ENV=production
     ports:
-      - "${PORT:-3000}:3000"
+      - "${PORT:-3000}:${PORT:-3000}"
     volumes:
       - ./media:/app/media:ro
       - ./data:/app/data

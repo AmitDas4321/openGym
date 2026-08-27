@@ -13,7 +13,9 @@ import {
 import webpush from 'web-push';
 import * as db from './database/index.js';
 
-const PORT = +(process.env.PORT || 3000);
+const rawPort = process.env.PORT;
+const parsedPort = rawPort ? parseInt(String(rawPort).trim(), 10) : 3000;
+const PORT = (!isNaN(parsedPort) && parsedPort > 0 && parsedPort <= 65535) ? parsedPort : 3000;
 const RP_NAME = process.env.RP_NAME || 'openGym';
 const ADMIN_UIDS = (process.env.ADMIN_UIDS || '').split(',').map(s => s.trim()).filter(Boolean);
 const INVITE_ONLY = /^(1|true|yes|on)$/i.test(process.env.INVITE_ONLY || '');
